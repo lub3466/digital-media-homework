@@ -1,6 +1,6 @@
 # 数字媒体程序设计 · 实验代码
 
-2026 秋《数字媒体程序设计》两次实验的验证脚本。
+2026 秋《数字媒体程序设计》三次实验的源码。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -15,15 +15,27 @@
     estimate.py      数制互转与照片/音频/视频容量估算，含 assert 自检
 第02讲-主机配置单/
     config_calc.py   128B 模型的权重 / KV cache / 带宽 / 三方案成本复算
+第03讲-矩阵乘法四层实现/
+    matmul.c         C 三重循环
+    matmul.v          Verilog 组合逻辑（generate + genvar，9 个乘法器）
+    tb_matmul.v       testbench
+    matmul.cu         CUDA 核函数（1 线程算 1 个 C[i][j]）
+    matmul_musa.cu    MUSA 迁移版（只改 11 行前缀）
+    matmul_bench.c    N=256 循环顺序基准（i-j-k vs i-k-j）
+    matmul_O0.s       gcc -S -O0 输出
+    matmul_O2.s       gcc -S -O2 输出
 ```
 
 ## 运行
 
-只依赖 Python 3 标准库（第 01 讲额外用 zlib 写 PNG，也是标准库），不需要 pip install。
-
 ```bash
+# 第 01 / 02 讲：只依赖 Python 3 标准库
 python 第01讲-数制转换与存储容量估算/estimate.py
 python 第02讲-主机配置单/config_calc.py
+
+# 第 03 讲：需要 gcc、Icarus Verilog（CUDA 需 Toolkit，可选）
+gcc 第03讲-矩阵乘法四层实现/matmul.c -O2 -o matmul.exe && ./matmul.exe
+iverilog -g2012 -o tb.vvp 第03讲-矩阵乘法四层实现/tb_matmul.v 第03讲-矩阵乘法四层实现/matmul.v && vvp tb.vvp
 ```
 
 退出码 0 表示全部自检通过。
@@ -47,8 +59,15 @@ python 第02讲-主机配置单/config_calc.py
 - 三方案总价 51,192 / 23,999 / 79,791 元，每万元 tok/s 1.56 / 5.83 / 3.38
 - 本地 3 年 53,820 元 vs 全云 3 年 68,985 元
 
+**matmul 四层（第 03 讲）**
+
+- 同一组 A、B，四份实现输出完全一致：30/24/18、84/69/54、138/114/90
+- 内层乘加 `s += a[i][k]*b[k][j]` = 1 条 imull + 1 条 addl；-O0 326 行 → -O2 214 行
+- N=256 下 i-k-j 比 i-j-k 快 1.9×（缓存命中）
+- MUSA 迁移只改 11 行 cuda* → musa* 前缀
+
 ## 说明
 
 - 价格口径：2026-11-10 电商自营含税参考价，波动 ±5%
 - 出词速度是「带宽模型 + 折损系数」的估算，不是真机实测；折损系数的取值写在脚本注释里
-- 报告里的两张「截图」是脚本输出的控制台记录渲染成的图，内容与真实运行结果一致
+- 报告里的「截图」是脚本输出的控制台记录渲染成的图，内容与真实运行结果一致
