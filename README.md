@@ -24,6 +24,8 @@
     matmul_bench.c    N=256 循环顺序基准（i-j-k vs i-k-j）
     matmul_O0.s       gcc -S -O0 输出
     matmul_O2.s       gcc -S -O2 输出
+第04讲-Scaled Dot-Product 效率对比/
+    lab04_bench/      点积 Python/C/Rust 三实现 + 统一计时基准
 ```
 
 ## 运行
@@ -65,6 +67,13 @@ iverilog -g2012 -o tb.vvp 第03讲-矩阵乘法四层实现/tb_matmul.v 第03讲
 - 内层乘加 `s += a[i][k]*b[k][j]` = 1 条 imull + 1 条 addl；-O0 326 行 → -O2 214 行
 - N=256 下 i-k-j 比 i-j-k 快 1.9×（缓存命中）
 - MUSA 迁移只改 11 行 cuda* → musa* 前缀
+
+**dot 三语言（第 04 讲）**
+
+- 同一份 data/*.bin，三版 result/checksum 逐位一致，边界用例 5/5
+- C 与 Rust 稳定在纯 Python 的约 68×（N=10^4~10^6，内存带宽受限）
+- 计时协议：预热 10 轮 + 200 轮取 min（噪声只加时间，min 最稳），两轮偏差 <5%
+- 依赖：Python 3.13 / gcc 16.2.0 / Rust 1.100.0（均为标准库，无第三方）
 
 ## 说明
 
